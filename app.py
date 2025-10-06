@@ -16,7 +16,11 @@ def synthetic_experiment(temp, bf):
     bf_effect = np.where(bf <= 0.01, 0.08 * bf_percent, -0.04 * bf_percent + 0.12)
     strength_base = 35.0
     strength = strength_base * np.exp(bf_effect + temp_effect)
-    co2 = 3 + 0.732*bf_percent - 0.084*bf_percent**2 if bf <= 0.05 else 4.56 + 1.44/5*(bf_percent-5)
+    co2 = np.where(
+        bf <= 0.05,
+        3 + 0.732 * bf_percent - 0.084 * bf_percent**2,
+        4.56 + 1.44 / 5 * (bf_percent - 5),
+        )
     return strength, co2
 
 # --- Input ranges ---
