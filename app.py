@@ -89,6 +89,9 @@ with tabs[2]:
 # --- Tab 4: Experiment Planner ---
 with tabs[3]:
     st.header("📊 Active Learning / Next Experiment Suggestion")
+    mu_s = np.array(mu_s).flatten()
+    mu_c = np.array(mu_c).flatten()
+
     mu_comb = 0.7 * (mu_s - mu_s.min()) / (mu_s.ptp() + 1e-9) + 0.3 * (mu_c - mu_c.min()) / (mu_c.ptp() + 1e-9)
     var_comb = 0.7**2 * std_s**2 + 0.3**2 * std_c**2
     std_comb = np.sqrt(var_comb)
