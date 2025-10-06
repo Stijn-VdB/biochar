@@ -1,5 +1,6 @@
 streamlit
 numpy
-matplotlib
-scipy
+plotly
 scikit-learn
+scipy
+
