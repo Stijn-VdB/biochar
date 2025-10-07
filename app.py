@@ -74,10 +74,6 @@ best_temp = temps[best_idx[1]]
 best_bf = bfs[best_idx[0]]
 
 st.success(f"🎯 Optimal Mix: {best_temp:.1f} °C | {best_bf:.2f}% Biochar")
-
-if st.button("🎉 Celebrate Optimization!"):
-    st.balloons()
-
 # ==============================
 # 2D Heatmaps
 # ==============================
