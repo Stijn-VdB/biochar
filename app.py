@@ -110,16 +110,20 @@ fig3d.add_trace(go.Surface(
     x=temps, y=bfs, z=strengths,
     colorscale="Viridis", name="Strength (MPa)", opacity=0.9
 ))
-fig3d.add_trace(go.Surface(
+
+fig3d2= go.Figure()
+fig3d2.add_trace(go.Surface(
     x=temps, y=bfs, z=co2s,
     colorscale="Plasma", name="CO₂ Sequestered", opacity=0.6
 ))
-fig3d.add_trace(go.Surface(
+
+fig3d3= go.Figure()
+fig3d3.add_trace(go.Surface(
     x=temps, y=bfs, z=combined * strengths.max(),
     colorscale="Cividis", name="Combined Objective", showscale=False, opacity=0.5
 ))
 fig3d.update_layout(
-    title="3D Surfaces — Strength, CO₂, and Combined Objective",
+    title="3D Surface — Strength",
     scene=dict(
         xaxis_title="Temperature (°C)",
         yaxis_title="Biochar (%)",
@@ -128,6 +132,28 @@ fig3d.update_layout(
     height=700
 )
 st.plotly_chart(fig3d, use_container_width=True)
+
+fig3d2.update_layout(
+    title="3D Surface — CO₂",
+    scene=dict(
+        xaxis_title="Temperature (°C)",
+        yaxis_title="Biochar (%)",
+        zaxis_title="Value (scaled)"
+    ),
+    height=700
+)
+st.plotly_chart(fig3d2, use_container_width=True)
+
+fig3d3.update_layout(
+    title="3D Surfaces — Combined Objective",
+    scene=dict(
+        xaxis_title="Temperature (°C)",
+        yaxis_title="Biochar (%)",
+        zaxis_title="Value (scaled)"
+    ),
+    height=700
+)
+st.plotly_chart(fig3d3, use_container_width=True)
 
 # ==============================
 # Gaussian Process (Uncertainty Demo)
