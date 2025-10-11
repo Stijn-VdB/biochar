@@ -366,7 +366,7 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate
    
    
     st.plotly_chart(fig, use_container_width=True)
-    return fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm
+    return fig
 
 # -------------------------
 # ---- Compute derived properties
