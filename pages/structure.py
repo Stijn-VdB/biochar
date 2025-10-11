@@ -364,8 +364,6 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate
     # --- Add legend traces to figure ---
     fig.add_traces(legend_traces)
    
-   
-    st.plotly_chart(fig, use_container_width=True)
     return fig
 
 # -------------------------
