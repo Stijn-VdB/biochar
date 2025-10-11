@@ -231,7 +231,12 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate
         "AF": AF,
         "unhydrated binder": unhydrated
     }
-   
+    print(B)
+    print(CSH)
+    print(CH)
+    print(A)
+    print(AF)
+    print(unhydrated)
     # Normalize to total solid fraction (exclude pores)
     total_solids = sum(phases.values())
     for k in phases:
