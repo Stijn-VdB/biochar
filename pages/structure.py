@@ -40,7 +40,7 @@ st.title("Multiscale Façade Panel — Macro → Meso → Micro")
 st.sidebar.header("Mixture composition (editable)")
 biochar_pct = st.sidebar.slider("Biochar content (% by mass of binder)", 0.0, 20.0, 5.0, 0.5)
 wc_ratio = st.sidebar.slider("Water/Cement ratio (w/c)", 0.25, 0.70, 0.45, 0.01)
-aggregate_pct = st.sidebar.slider("Coarse aggregate (% of mix mass)", 0.0, 70.0, 40.0, 1.0)
+aggregate_pct = st.sidebar.slider("Coarse aggregate (% by mass of binder)", 0.0, 10.0, 5.0, 0.2)
 
 st.sidebar.header("Geometry / Visualization")
 panel_w = st.sidebar.number_input("Panel width (m)", 0.2, 5.0, 1.0, 0.1)
@@ -210,7 +210,7 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate
     vertex_perturb = voxel_size * 0.3  # max random offset for vertices
    
     # Material ratios (example inputs)
-    B_over_C = biochar_pct
+    B_over_C = biochar_pct/100
     A_over_C = aggregate_pct
     W_over_C = wc_ratio
    
@@ -395,19 +395,6 @@ elif scale_choice == "Meso (cutout)":
 elif scale_choice == "Micro (zoom)":
     fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm = create_micro_figure(micro_cube_mm, biochar_pct, porosity, wc_ratio, aggregate_pct, micro_particle_count)
     st.plotly_chart(fig, use_container_width=True, height=700)
-
-    if export_csv:
-        # prepare a small dataframe with particle data
-        bio_df = pd.DataFrame(bio_pts, columns=['x','y','z'])
-        bio_df['type'] = 'biochar'
-        bio_df['radius_mm'] = bio_r_mm
-        pore_df = pd.DataFrame(pore_pts, columns=['x','y','z'])
-        pore_df['type'] = 'pore'
-        pore_df['radius_mm'] = pore_r_mm
-        df = pd.concat([bio_df, pore_df], ignore_index=True)
-
-        csv_bytes = df.to_csv(index=False).encode('utf-8')
-        st.download_button(label='Download microstructure CSV', data=csv_bytes, file_name='microstructure_pointcloud.csv', mime='text/csv')
 
 elif scale_choice == "Play zoom animation":
     st.info("Playing quick zoom: Macro → Meso → Micro")
