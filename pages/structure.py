@@ -269,7 +269,7 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate
    
     # --- Color palette (yellow ↔ purple harmony) ---
     phase_colors = {
-        "Biochar": "#FFD633",           # bright yellow
+        "Biochar": "#000000",           # bright yellow
         "CSH": "#FFB347",         # orange-yellow
         "CH": "#C39BD3",          # lavender
         "Aggregates": "#7D3C98",           # deep purple
