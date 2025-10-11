@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import time
+from scipy.ndimage import gaussian_filter
 
 # -------------------------
 # ------------ UI / Layout
@@ -186,7 +187,7 @@ def create_meso_figure(cube_size_mm, porosity, grid_n=16):
     return fig
 
 
-def create_micro_figure(cube_size_mm, biochar_pct, porosity, n_particles=800):
+def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate_pct, n_particles=800):
     """
     Create a micro-scale visualization as a point cloud of "biochar particles" and "pores".
     - We represent particles as scatter markers sized by particle radius.
@@ -200,55 +201,167 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, n_particles=800):
     Replace with a proper packing algorithm or CT-derived geometry for higher fidelity.
     """
     # volume of cube in m^3
-    cube_m = (cube_size_mm / 1000.0) ** 3
-
-    # particle counts (visual heuristic, not physical)
-    # ASSUMPTION: fraction of particles that are biochar depends on biochar_pct
-    frac_bio = np.clip(biochar_pct / 20.0, 0.01, 0.9)
-    n_bio = int(n_particles * frac_bio)
-    n_pores = n_particles - n_bio
-
-    # sample positions uniformly inside cube [-s/2, s/2]
-    s = cube_size_mm / 1000.0
-    def rand_points(n):
-        return np.random.uniform(-s/2, s/2, size=(n, 3))
-
-    bio_pts = rand_points(n_bio)
-    pore_pts = rand_points(n_pores)
-
-    # particle sizes (mm) using a lognormal distribution
-    # ASSUMPTION: biochar particle median size 0.2 mm, pores median size 0.05 mm
-    bio_r_mm = np.random.lognormal(mean=np.log(0.2), sigma=0.6, size=n_bio)
-    pore_r_mm = np.random.lognormal(mean=np.log(0.05), sigma=0.8, size=n_pores)
-
-    # convert sizes to marker pixels for Plotly (visual scaling)
-    # ASSUMPTION: visual scale factor
-    scale_factor = 40.0
-    bio_marker_size = np.clip(bio_r_mm * scale_factor, 2, 40)
-    pore_marker_size = np.clip(pore_r_mm * scale_factor, 1, 30)
-
-    trace_bio = go.Scatter3d(x=bio_pts[:,0], y=bio_pts[:,1], z=bio_pts[:,2], mode='markers',
-                             marker=dict(size=bio_marker_size, color='black', opacity=0.9), name='Biochar particles')
-    trace_pores = go.Scatter3d(x=pore_pts[:,0], y=pore_pts[:,1], z=pore_pts[:,2], mode='markers',
-                               marker=dict(size=pore_marker_size, color='lightblue', opacity=0.6), name='Pores')
-
-    # cube boundary
-    c = s/2
-    verts = np.array([[-c, -c, -c], [c, -c, -c], [c, c, -c], [-c, c, -c],
-                      [-c, -c, c], [c, -c, c], [c, c, c], [-c, c, c]])
-    x, y, z = verts.T
-    mesh = go.Mesh3d(x=x, y=y, z=z, i=[0,0,0,4,4,4,0,1,2,4,5,6],
-                     j=[1,2,3,5,6,7,4,2,3,5,6,7],
-                     k=[2,3,0,6,7,4,1,3,0,6,7,4],
-                     color='lightgray', opacity=0.05, showscale=False)
-
-    fig = go.Figure(data=[mesh, trace_pores, trace_bio])
-    fig.update_layout(scene=dict(aspectmode='cube', xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False)),
-                      margin=dict(l=0, r=0, t=25, b=0),
-                      title=f"Micro cube: {cube_size_mm} mm — biochar {biochar_pct:.1f}% — porosity ~ {porosity:.3f}")
-    camera = dict(eye=dict(x=0.8, y=0.8, z=0.8))
-    fig.update_layout(scene_camera=camera)
-    return fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm
+   
+   # --- Parameters ---
+   cube_size_mm = 10
+   mean_porosity = porosity          # target porosity (~30%)
+   grid_n = 20                  # voxel resolution
+   voxel_size = cube_size_mm / 1000.0 / grid_n
+   vertex_perturb = voxel_size * 0.3  # max random offset for vertices
+   
+   # Material ratios (example inputs)
+   B_over_C = biochar_pct
+   A_over_C = aggregate_pct
+   W_over_C = wc_ratio
+   
+   # --- Compute volumetric fractions ---
+   C = 1 / (B_over_C + W_over_C + A_over_C + 1)
+   B = C * B_over_C
+   A = C * A_over_C
+   CSH = 0.7 * C
+   CH = 0.3 * C
+   AF = 0.1 * C
+   unhydrated = (1 - (W_over_C - mean_porosity) / 0.36) * C
+   
+   phases = {
+       "Biochar": B,
+       "CSH": CSH,
+       "CH": CH,
+       "Aggregates": A,
+       "AF": AF,
+       "unhydrated binder": unhydrated
+   }
+   
+   # Normalize to total solid fraction (exclude pores)
+   total_solids = sum(phases.values())
+   for k in phases:
+       phases[k] /= total_solids
+   
+   phase_names = list(phases.keys())
+   phase_weights = np.array(list(phases.values()))
+   
+   # Assign phase to each solid voxel based on proportions
+   phase_choices = np.random.choice(phase_names, size=grid_n**3, p=phase_weights)
+   
+   # --- 3D noise for blobby holes ---
+   np.random.seed(42)
+   noise = np.random.rand(grid_n, grid_n, grid_n)
+   smooth_noise = gaussian_filter(noise, sigma=1.0)
+   threshold = np.percentile(smooth_noise, mean_porosity * 100)
+   solid_mask = smooth_noise > threshold  # True = solid
+   
+   # --- Color palette (yellow ↔ purple harmony) ---
+   phase_colors = {
+       "Biochar": "#FFD633",           # bright yellow
+       "CSH": "#FFB347",         # orange-yellow
+       "CH": "#C39BD3",          # lavender
+       "Aggregates": "#7D3C98",           # deep purple
+       "AF": "#A569BD",          # magenta-violet
+       "unhydrated binder": "#D2B4DE"   # pale violet
+   }
+   
+   # --- Function for random polyhedron vertices ---
+   def make_random_polyhedron(xc, yc, zc, size, perturb):
+       s = size / 2
+       verts = np.array([
+           [xc - s, yc - s, zc - s],
+           [xc + s, yc - s, zc - s],
+           [xc + s, yc + s, zc - s],
+           [xc - s, yc + s, zc - s],
+           [xc - s, yc - s, zc + s],
+           [xc + s, yc - s, zc + s],
+           [xc + s, yc + s, zc + s],
+           [xc - s, yc + s, zc + s],
+       ])
+       verts += np.random.uniform(-perturb, perturb, size=verts.shape)
+       return verts
+   
+   # --- Build Mesh3d data ---
+   mesh_x, mesh_y, mesh_z, mesh_i, mesh_j, mesh_k, mesh_facecolor = [], [], [], [], [], [], []
+   cube_idx = 0
+   
+   lin = np.linspace(-cube_size_mm / 2000, cube_size_mm / 2000, grid_n)
+   X, Y, Z = np.meshgrid(lin, lin, lin)
+   
+   for (xi, yi, zi, solid, phase) in zip(X.flatten(), Y.flatten(), Z.flatten(),
+                                         solid_mask.flatten(), phase_choices):
+       if solid:
+           verts = make_random_polyhedron(xi, yi, zi, voxel_size, vertex_perturb)
+           x, y, z = verts.T
+           mesh_x.extend(x)
+           mesh_y.extend(y)
+           mesh_z.extend(z)
+   
+           faces = [
+               (0,1,2),(0,2,3),(4,5,6),(4,6,7),
+               (0,1,5),(0,5,4),(2,3,7),(2,7,6),
+               (1,2,6),(1,6,5),(0,3,7),(0,7,4)
+           ]
+           for i_face, j_face, k_face in faces:
+               mesh_i.append(cube_idx*8 + i_face)
+               mesh_j.append(cube_idx*8 + j_face)
+               mesh_k.append(cube_idx*8 + k_face)
+               mesh_facecolor.append(phase_colors[phase])
+           cube_idx += 1
+   
+   # --- Plotly Mesh3d (opaque solid grains) ---
+   mesh = go.Mesh3d(
+       x=mesh_x, y=mesh_y, z=mesh_z,
+       i=mesh_i, j=mesh_j, k=mesh_k,
+       facecolor=mesh_facecolor,
+       flatshading=True,
+       opacity=1.0,
+       showscale=False
+   )
+   
+   # --- Cube outline ---
+   c = cube_size_mm / 2000
+   verts = np.array([[-c,-c,-c],[c,-c,-c],[c,c,-c],[-c,c,-c],
+                     [-c,-c,c],[c,-c,c],[c,c,c],[-c,c,c]])
+   x, y, z = verts.T
+   edges = go.Mesh3d(
+       x=x, y=y, z=z,
+       i=[0,0,0,4,4,4,0,1,2,4,5,6],
+       j=[1,2,3,5,6,7,4,2,3,5,6,7],
+       k=[2,3,0,6,7,4,1,3,0,6,7,4],
+       color='lightgray',
+       opacity=0.05,
+       showscale=False
+   )
+   
+   # --- Build figure ---
+   fig = go.Figure([mesh, edges])
+   fig.update_layout(
+       scene=dict(
+           aspectmode='cube',
+           xaxis=dict(visible=False),
+           yaxis=dict(visible=False),
+           zaxis=dict(visible=False),
+           camera=dict(eye=dict(x=1.5, y=1.5, z=1.2))
+       ),
+       margin=dict(l=0,r=0,t=30,b=0),
+       title=f"Meso-Cube: {cube_size_mm} mm — mean porosity ~ {mean_porosity:.2f}"
+   )
+   
+   # --- Create dummy traces for legend ---
+   legend_traces = []
+   for phase_name, color in phase_colors.items():
+       legend_traces.append(
+           go.Scatter3d(
+               x=[None], y=[None], z=[None],
+               mode='markers',
+               marker=dict(size=10, color=color),
+               name=phase_name,
+               showlegend=True
+           )
+       )
+   
+   # --- Add legend traces to figure ---
+   fig.add_traces(legend_traces)
+   
+   
+   st.plotly_chart(fig, use_container_width=True)
+   return fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm
 
 # -------------------------
 # ---- Compute derived properties
@@ -275,7 +388,7 @@ elif scale_choice == "Meso (cutout)":
     st.plotly_chart(fig, use_container_width=True, height=700)
 
 elif scale_choice == "Micro (zoom)":
-    fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm = create_micro_figure(micro_cube_mm, biochar_pct, porosity, micro_particle_count)
+    fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm = create_micro_figure(micro_cube_mm, biochar_pct, porosity, wc_ratio, aggregate_pct, micro_particle_count)
     st.plotly_chart(fig, use_container_width=True, height=700)
 
     if export_csv:
