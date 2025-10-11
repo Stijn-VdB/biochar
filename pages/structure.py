@@ -263,10 +263,10 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate
         "AF": "#A569BD",
         "unhydrated binder": "#D2B4DE"
     }
-
+    scale_factor = cube_size_mm / 40  # if 40 mm is largest aggregate
     # --- Size parameters (meters) ---
     phase_size_params = {
-        "Aggregates": {"mean": 0.02, "sigma": 0.3},      # 20 mm median
+        "Aggregates": {"mean": 0.02*scale_factor, "sigma": 0.3},      # 20 mm median
         "Biochar": {"mean": 5e-5, "sigma": 0.5},        # 50 µm
         "CSH": {"mean": 5e-8, "sigma": 0.8},            # 50 nm
         "CH": {"mean": 5e-6, "sigma": 0.5},             # 5 µm
