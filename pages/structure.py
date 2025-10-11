@@ -393,7 +393,7 @@ elif scale_choice == "Meso (cutout)":
     st.plotly_chart(fig, use_container_width=True, height=700)
 
 elif scale_choice == "Micro (zoom)":
-    fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm = create_micro_figure(micro_cube_mm, biochar_pct, porosity, wc_ratio, aggregate_pct, micro_particle_count)
+    fig = create_micro_figure(micro_cube_mm, biochar_pct, porosity, wc_ratio, aggregate_pct, micro_particle_count)
     st.plotly_chart(fig, use_container_width=True, height=700)
 
 elif scale_choice == "Play zoom animation":
