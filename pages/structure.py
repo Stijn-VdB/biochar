@@ -202,63 +202,63 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate
     """
     # volume of cube in m^3
    
-   # --- Parameters ---
-   cube_size_mm = 10
-   mean_porosity = porosity          # target porosity (~30%)
-   grid_n = 20                  # voxel resolution
-   voxel_size = cube_size_mm / 1000.0 / grid_n
-   vertex_perturb = voxel_size * 0.3  # max random offset for vertices
+    # --- Parameters ---
+    cube_size_mm = 10
+    mean_porosity = porosity          # target porosity (~30%)
+    grid_n = 20                  # voxel resolution
+    voxel_size = cube_size_mm / 1000.0 / grid_n
+    vertex_perturb = voxel_size * 0.3  # max random offset for vertices
    
-   # Material ratios (example inputs)
-   B_over_C = biochar_pct
-   A_over_C = aggregate_pct
-   W_over_C = wc_ratio
+    # Material ratios (example inputs)
+    B_over_C = biochar_pct
+    A_over_C = aggregate_pct
+    W_over_C = wc_ratio
    
-   # --- Compute volumetric fractions ---
-   C = 1 / (B_over_C + W_over_C + A_over_C + 1)
-   B = C * B_over_C
-   A = C * A_over_C
-   CSH = 0.7 * C
-   CH = 0.3 * C
-   AF = 0.1 * C
-   unhydrated = (1 - (W_over_C - mean_porosity) / 0.36) * C
+    # --- Compute volumetric fractions ---
+    C = 1 / (B_over_C + W_over_C + A_over_C + 1)
+    B = C * B_over_C
+    A = C * A_over_C
+    CSH = 0.7 * C
+    CH = 0.3 * C
+    AF = 0.1 * C
+    unhydrated = (1 - (W_over_C - mean_porosity) / 0.36) * C
    
-   phases = {
-       "Biochar": B,
-       "CSH": CSH,
-       "CH": CH,
-       "Aggregates": A,
-       "AF": AF,
-       "unhydrated binder": unhydrated
-   }
+    phases = {
+        "Biochar": B,
+        "CSH": CSH,
+        "CH": CH,
+        "Aggregates": A,
+        "AF": AF,
+        "unhydrated binder": unhydrated
+    }
    
-   # Normalize to total solid fraction (exclude pores)
-   total_solids = sum(phases.values())
-   for k in phases:
-       phases[k] /= total_solids
+    # Normalize to total solid fraction (exclude pores)
+    total_solids = sum(phases.values())
+    for k in phases:
+        phases[k] /= total_solids
    
-   phase_names = list(phases.keys())
-   phase_weights = np.array(list(phases.values()))
+    phase_names = list(phases.keys())
+    phase_weights = np.array(list(phases.values()))
    
-   # Assign phase to each solid voxel based on proportions
-   phase_choices = np.random.choice(phase_names, size=grid_n**3, p=phase_weights)
+    # Assign phase to each solid voxel based on proportions
+    phase_choices = np.random.choice(phase_names, size=grid_n**3, p=phase_weights)
    
-   # --- 3D noise for blobby holes ---
-   np.random.seed(42)
-   noise = np.random.rand(grid_n, grid_n, grid_n)
-   smooth_noise = gaussian_filter(noise, sigma=1.0)
-   threshold = np.percentile(smooth_noise, mean_porosity * 100)
-   solid_mask = smooth_noise > threshold  # True = solid
+    # --- 3D noise for blobby holes ---
+    np.random.seed(42)
+    noise = np.random.rand(grid_n, grid_n, grid_n)
+    smooth_noise = gaussian_filter(noise, sigma=1.0)
+    threshold = np.percentile(smooth_noise, mean_porosity * 100)
+    solid_mask = smooth_noise > threshold  # True = solid
    
-   # --- Color palette (yellow ↔ purple harmony) ---
-   phase_colors = {
-       "Biochar": "#FFD633",           # bright yellow
-       "CSH": "#FFB347",         # orange-yellow
-       "CH": "#C39BD3",          # lavender
-       "Aggregates": "#7D3C98",           # deep purple
-       "AF": "#A569BD",          # magenta-violet
-       "unhydrated binder": "#D2B4DE"   # pale violet
-   }
+    # --- Color palette (yellow ↔ purple harmony) ---
+    phase_colors = {
+        "Biochar": "#FFD633",           # bright yellow
+        "CSH": "#FFB347",         # orange-yellow
+        "CH": "#C39BD3",          # lavender
+        "Aggregates": "#7D3C98",           # deep purple
+        "AF": "#A569BD",          # magenta-violet
+        "unhydrated binder": "#D2B4DE"   # pale violet
+    }
    
    # --- Function for random polyhedron vertices ---
    def make_random_polyhedron(xc, yc, zc, size, perturb):
