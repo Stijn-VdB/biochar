@@ -68,9 +68,20 @@ def estimate_porosity(biochar_pct, wc_ratio, aggregate_pct):
     - effect of w/c: higher w/c increases porosity
     - effect of aggregate: more aggregate lowers paste volume -> lower porosity
     """
-    base_porosity = 0.08  # ASSUMPTION: 8% base porosity for dense concrete
-    porosity = base_porosity + 0.015 * biochar_pct + 0.08 * (wc_ratio - 0.40) - 0.001 * aggregate_pct
-    porosity = np.clip(porosity, 0.005, 0.60)
+    base_porosity = 17.498  # ASSUMPTION: 8% base porosity for dense concrete
+    
+    lnRR_fcu=0.04879 #assume 500°C pyrolysis
+    lnRR_bf=-0.04*biochar_pct+0.13
+    fcu=35*np.exp(lnRR_fcu+lnRR_bf)
+   
+    wc_effect=21.194*wc_ratio^2-9.3383*wc_ratio+14.304
+    strength_effect=-5.527*np.log(fcu)+34.893
+    ac_effect=-0.2847*aggregate_pct^2+2.0184*aggregate_pct+11.129
+    lnRR_wc=np.log(wc_effect/17.18857)
+    lnRR_strength=np.log(strength_effect/17.10227)
+    lnRR_ac=np.log(ac_effect/14.1035)
+   
+    porosity = 17.498*np.exp(lnRR_wc+lnRR_strength+lnRR_ac)
     return porosity
 
 
