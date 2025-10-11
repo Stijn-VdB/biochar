@@ -1,12 +1,15 @@
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+import plotly.graph_objects as go
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
+import pandas as pd
+import time
+
 tab1, tab2 = st.tabs(["Main Dashboard", "Multiscale Visualization"])
 with tab1:
-    import streamlit as st
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from scipy.stats import norm
-    import plotly.graph_objects as go
-    from sklearn.gaussian_process import GaussianProcessRegressor
-    from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
     
     st.set_page_config(page_title="🧱 Biochar–Concrete Digital Twin", layout="wide")
     
