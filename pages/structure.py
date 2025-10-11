@@ -74,9 +74,9 @@ def estimate_porosity(biochar_pct, wc_ratio, aggregate_pct):
     lnRR_bf=-0.04*biochar_pct+0.13
     fcu=35*np.exp(lnRR_fcu+lnRR_bf)
    
-    wc_effect=21.194*wc_ratio^2-9.3383*wc_ratio+14.304
+    wc_effect=21.194*wc_ratio**2-9.3383*wc_ratio+14.304
     strength_effect=-5.527*np.log(fcu)+34.893
-    ac_effect=-0.2847*aggregate_pct^2+2.0184*aggregate_pct+11.129
+    ac_effect=-0.2847*aggregate_pct**2+2.0184*aggregate_pct+11.129
     lnRR_wc=np.log(wc_effect/17.18857)
     lnRR_strength=np.log(strength_effect/17.10227)
     lnRR_ac=np.log(ac_effect/14.1035)
