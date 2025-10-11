@@ -260,108 +260,108 @@ def create_micro_figure(cube_size_mm, biochar_pct, porosity, wc_ratio, aggregate
         "unhydrated binder": "#D2B4DE"   # pale violet
     }
    
-   # --- Function for random polyhedron vertices ---
-   def make_random_polyhedron(xc, yc, zc, size, perturb):
-       s = size / 2
-       verts = np.array([
-           [xc - s, yc - s, zc - s],
-           [xc + s, yc - s, zc - s],
-           [xc + s, yc + s, zc - s],
-           [xc - s, yc + s, zc - s],
-           [xc - s, yc - s, zc + s],
-           [xc + s, yc - s, zc + s],
-           [xc + s, yc + s, zc + s],
-           [xc - s, yc + s, zc + s],
-       ])
-       verts += np.random.uniform(-perturb, perturb, size=verts.shape)
-       return verts
+    # --- Function for random polyhedron vertices ---
+    def make_random_polyhedron(xc, yc, zc, size, perturb):
+        s = size / 2
+        verts = np.array([
+            [xc - s, yc - s, zc - s],
+            [xc + s, yc - s, zc - s],
+            [xc + s, yc + s, zc - s],
+            [xc - s, yc + s, zc - s],
+            [xc - s, yc - s, zc + s],
+            [xc + s, yc - s, zc + s],
+            [xc + s, yc + s, zc + s],
+            [xc - s, yc + s, zc + s],
+        ])
+        verts += np.random.uniform(-perturb, perturb, size=verts.shape)
+        return verts
    
-   # --- Build Mesh3d data ---
-   mesh_x, mesh_y, mesh_z, mesh_i, mesh_j, mesh_k, mesh_facecolor = [], [], [], [], [], [], []
-   cube_idx = 0
+    # --- Build Mesh3d data ---
+    mesh_x, mesh_y, mesh_z, mesh_i, mesh_j, mesh_k, mesh_facecolor = [], [], [], [], [], [], []
+    cube_idx = 0
    
-   lin = np.linspace(-cube_size_mm / 2000, cube_size_mm / 2000, grid_n)
-   X, Y, Z = np.meshgrid(lin, lin, lin)
+    lin = np.linspace(-cube_size_mm / 2000, cube_size_mm / 2000, grid_n)
+    X, Y, Z = np.meshgrid(lin, lin, lin)
    
-   for (xi, yi, zi, solid, phase) in zip(X.flatten(), Y.flatten(), Z.flatten(),
+    for (xi, yi, zi, solid, phase) in zip(X.flatten(), Y.flatten(), Z.flatten(),
                                          solid_mask.flatten(), phase_choices):
-       if solid:
-           verts = make_random_polyhedron(xi, yi, zi, voxel_size, vertex_perturb)
-           x, y, z = verts.T
-           mesh_x.extend(x)
-           mesh_y.extend(y)
-           mesh_z.extend(z)
+        if solid:
+            verts = make_random_polyhedron(xi, yi, zi, voxel_size, vertex_perturb)
+            x, y, z = verts.T
+            mesh_x.extend(x)
+            mesh_y.extend(y)
+            mesh_z.extend(z)
    
-           faces = [
-               (0,1,2),(0,2,3),(4,5,6),(4,6,7),
-               (0,1,5),(0,5,4),(2,3,7),(2,7,6),
-               (1,2,6),(1,6,5),(0,3,7),(0,7,4)
-           ]
-           for i_face, j_face, k_face in faces:
-               mesh_i.append(cube_idx*8 + i_face)
-               mesh_j.append(cube_idx*8 + j_face)
-               mesh_k.append(cube_idx*8 + k_face)
-               mesh_facecolor.append(phase_colors[phase])
-           cube_idx += 1
+            faces = [
+                (0,1,2),(0,2,3),(4,5,6),(4,6,7),
+                (0,1,5),(0,5,4),(2,3,7),(2,7,6),
+                (1,2,6),(1,6,5),(0,3,7),(0,7,4)
+            ]
+            for i_face, j_face, k_face in faces:
+                mesh_i.append(cube_idx*8 + i_face)
+                mesh_j.append(cube_idx*8 + j_face)
+                mesh_k.append(cube_idx*8 + k_face)
+                mesh_facecolor.append(phase_colors[phase])
+            cube_idx += 1
    
-   # --- Plotly Mesh3d (opaque solid grains) ---
-   mesh = go.Mesh3d(
-       x=mesh_x, y=mesh_y, z=mesh_z,
-       i=mesh_i, j=mesh_j, k=mesh_k,
-       facecolor=mesh_facecolor,
-       flatshading=True,
-       opacity=1.0,
-       showscale=False
-   )
+    # --- Plotly Mesh3d (opaque solid grains) ---
+    mesh = go.Mesh3d(
+        x=mesh_x, y=mesh_y, z=mesh_z,
+        i=mesh_i, j=mesh_j, k=mesh_k,
+        facecolor=mesh_facecolor,
+        flatshading=True,
+        opacity=1.0,
+        showscale=False
+    )
    
-   # --- Cube outline ---
-   c = cube_size_mm / 2000
-   verts = np.array([[-c,-c,-c],[c,-c,-c],[c,c,-c],[-c,c,-c],
-                     [-c,-c,c],[c,-c,c],[c,c,c],[-c,c,c]])
-   x, y, z = verts.T
-   edges = go.Mesh3d(
-       x=x, y=y, z=z,
-       i=[0,0,0,4,4,4,0,1,2,4,5,6],
-       j=[1,2,3,5,6,7,4,2,3,5,6,7],
-       k=[2,3,0,6,7,4,1,3,0,6,7,4],
-       color='lightgray',
-       opacity=0.05,
-       showscale=False
-   )
+    # --- Cube outline ---
+    c = cube_size_mm / 2000
+    verts = np.array([[-c,-c,-c],[c,-c,-c],[c,c,-c],[-c,c,-c],
+                      [-c,-c,c],[c,-c,c],[c,c,c],[-c,c,c]])
+    x, y, z = verts.T
+    edges = go.Mesh3d(
+        x=x, y=y, z=z,
+        i=[0,0,0,4,4,4,0,1,2,4,5,6],
+        j=[1,2,3,5,6,7,4,2,3,5,6,7],
+        k=[2,3,0,6,7,4,1,3,0,6,7,4],
+        color='lightgray',
+        opacity=0.05,
+        showscale=False
+    )
    
-   # --- Build figure ---
-   fig = go.Figure([mesh, edges])
-   fig.update_layout(
-       scene=dict(
-           aspectmode='cube',
-           xaxis=dict(visible=False),
-           yaxis=dict(visible=False),
-           zaxis=dict(visible=False),
-           camera=dict(eye=dict(x=1.5, y=1.5, z=1.2))
-       ),
-       margin=dict(l=0,r=0,t=30,b=0),
-       title=f"Meso-Cube: {cube_size_mm} mm — mean porosity ~ {mean_porosity:.2f}"
-   )
+    # --- Build figure ---
+    fig = go.Figure([mesh, edges])
+    fig.update_layout(
+        scene=dict(
+            aspectmode='cube',
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            zaxis=dict(visible=False),
+            camera=dict(eye=dict(x=1.5, y=1.5, z=1.2))
+        ),
+        margin=dict(l=0,r=0,t=30,b=0),
+        title=f"Meso-Cube: {cube_size_mm} mm — mean porosity ~ {mean_porosity:.2f}"
+    )
    
-   # --- Create dummy traces for legend ---
-   legend_traces = []
-   for phase_name, color in phase_colors.items():
-       legend_traces.append(
-           go.Scatter3d(
-               x=[None], y=[None], z=[None],
-               mode='markers',
-               marker=dict(size=10, color=color),
-               name=phase_name,
-               showlegend=True
-           )
-       )
+    # --- Create dummy traces for legend ---
+    legend_traces = []
+    for phase_name, color in phase_colors.items():
+        legend_traces.append(
+            go.Scatter3d(
+                x=[None], y=[None], z=[None],
+                mode='markers',
+                marker=dict(size=10, color=color),
+                name=phase_name,
+                showlegend=True
+            )
+        )
    
-   # --- Add legend traces to figure ---
-   fig.add_traces(legend_traces)
+    # --- Add legend traces to figure ---
+    fig.add_traces(legend_traces)
    
    
-   st.plotly_chart(fig, use_container_width=True)
-   return fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm
+    st.plotly_chart(fig, use_container_width=True)
+    return fig, bio_pts, pore_pts, bio_r_mm, pore_r_mm
 
 # -------------------------
 # ---- Compute derived properties
